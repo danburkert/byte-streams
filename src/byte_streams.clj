@@ -462,7 +462,7 @@
     (future
       (loop [s bufs]
         (when (and (seq s) (.isOpen sink))
-          (.write sink (.duplicate (first s)))
+          (.write sink (.duplicate ^ByteBuffer (first s)))
           (recur (rest s))))
       (.close sink))
     source))
