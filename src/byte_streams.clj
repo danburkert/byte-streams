@@ -32,9 +32,6 @@
 
 ;;; protocols
 
-(defprotocol Byteable
-  (to-byte [_] "Converts the object to a single byte."))
-
 (defprotocol Closeable
   (close [_] "A protocol that is a superset of `java.io.Closeable`."))
 
@@ -372,20 +369,6 @@
 
 ;;; conversion definitions
 
-(def-conversion [(seq-of Byteable) (seq-of ByteBuffer)]
-  [s {:keys [chunk-size direct?] :or {chunk-size 4096, direct? false} :as options}]
-  (when-not (empty? s)
-    (let [s' (take chunk-size s)
-          cnt (count s')
-          buf (if direct?
-                (ByteBuffer/allocateDirect cnt)
-                (ByteBuffer/allocate cnt))]
-      (doseq [[i x] (map list (range) s')]
-        (.put buf i (to-byte x)))
-      (cons
-        buf
-        (convert (drop cnt s) (seq-of ByteBuffer) options)))))
-
 ;; byte-array => byte-buffer
 (def-conversion [byte-array ByteBuffer]
   [ary]
@@ -598,20 +581,6 @@
           (recur))))))
 
 ;;; protocol extensions
-
-(extend-protocol Byteable
-
-  Byte
-  (to-byte [this] this)
-
-  Short
-  (to-byte [this] (byte this))
-
-  Integer
-  (to-byte [this] (byte this))
-
-  Long
-  (to-byte [this] (byte this)))
 
 (extend-protocol ByteSink
 
