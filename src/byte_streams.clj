@@ -40,7 +40,7 @@
 
 (defprotocol ByteSource
   (take-bytes! [_ n options] "Takes `n` bytes from the byte source."))
- 
+
 (defprotocol ByteSink
   (send-bytes! [_ bytes options] "Puts `bytes` in the byte sink."))
 
@@ -132,7 +132,7 @@
 
                    (and (seq-of? a) (seq-of? b))
                    (valid? (second a) (second b))
-                   
+
                    :else
                    (= a b)))]
     (->> @src->dst->conversion
@@ -168,7 +168,7 @@
       java.io.Closeable
       (close [_]
         (close-fn))
-      
+
       clojure.lang.Sequential
       clojure.lang.ISeq
       clojure.lang.Seqable
@@ -198,13 +198,13 @@
                                 (fn [x _] x)
                                 (if-let [f (get-in @src->dst->conversion a+b)]
                                   f
-                                  
+
                                   ;; implicit (seq-of a) -> (seq-of b) conversion
                                   (if-let [f (when (every? seq-of? a+b)
                                                (get-in @src->dst->conversion (map second a+b)))]
                                     (fn [x options]
                                       (map #(f % options) x))
-                                    
+
                                     ;; this shouldn't ever happen, but let's have a decent error message all the same
                                     (throw
                                       (IllegalStateException.
@@ -222,7 +222,7 @@
                          x
                          fns)]
             (if-let [close-fn (when-let [fns (seq @close-fns)]
-                                #(doseq [f fns] (f)))] 
+                                #(doseq [f fns] (f)))]
               (if (sequential? result)
                 (closeable-seq result true close-fn)
                 (do
@@ -314,7 +314,7 @@
                           first
                           second)]
         (cond
-          
+
           (and src' dst')
           (let [f (get-in @src->dst->transfer [src' dst'])]
             (fn [source sink options]
@@ -324,7 +324,7 @@
                 (doseq [x [source sink source' sink']]
                   (when (satisfies? Closeable x)
                     (close x))))))
-          
+
           (and
             (conversion-path src ByteSource)
             (conversion-path dst ByteSink))
@@ -335,7 +335,7 @@
               (doseq [x [source sink source' sink']]
                 (when (satisfies? Closeable x)
                   (close x)))))
-          
+
           :else
           nil)))))
 
@@ -497,7 +497,7 @@
       (.close sink))
     source))
 
-;; input-stream => reader 
+;; input-stream => reader
 (def-conversion [InputStream Reader]
   [input-stream {:keys [encoding] :or {encoding "utf-8"}}]
   (BufferedReader. (InputStreamReader. input-stream ^String encoding)))
@@ -539,7 +539,7 @@
                     (let [remaining (- (.size fc) offset)]
                       (lazy-seq
                         (cons
-                          (.map fc 
+                          (.map fc
                             (if writable?
                               FileChannel$MapMode/READ_WRITE
                               FileChannel$MapMode/READ_ONLY)
@@ -595,7 +595,7 @@
         (when (pos? n)
           (.write output-stream ary 0 n)
           (.flush output-stream)
-          (recur)))))) 
+          (recur))))))
 
 ;;; protocol extensions
 
