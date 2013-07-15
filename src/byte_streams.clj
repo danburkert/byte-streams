@@ -391,17 +391,11 @@
 ;; byte-buffer => byte-array
 (def-conversion [ByteBuffer byte-array]
   [buf]
-  (if (.hasArray buf)
-    (if (= (alength (.array buf)) (.remaining buf))
-      (.array buf)
-      (let [ary (clojure.core/byte-array (.remaining buf))]
-        (doto buf
-          .mark
-          (.get ary 0 (.remaining buf))
-          .reset)
-        ary))
-    (let [^bytes ary (Array/newInstance Byte/TYPE (.remaining buf))]
-      (doto buf .mark (.get ary) .reset)
+  (if (and (.hasArray buf)
+           (= (alength (.array buf)) (.remaining buf)))
+    (.array buf)
+    (let [ary (clojure.core/byte-array (.remaining buf))]
+      (.get (.duplicate buf) ary)
       ary)))
 
 ;; sequence of byte-buffers => byte-buffer
@@ -415,9 +409,7 @@
                 (ByteBuffer/allocateDirect len)
                 (ByteBuffer/allocate len))]
       (doseq [^ByteBuffer b bufs]
-        (.mark b)
-        (.put buf b)
-        (.reset b))
+        (.put buf (.duplicate b)))
       (when (satisfies? Closeable bufs)
         (close bufs))
       (.flip buf))))
@@ -475,7 +467,7 @@
     (future
       (loop [s bufs]
         (when (and (seq s) (.isOpen sink))
-          (.write sink (first s))
+          (.write sink (.duplicate (first s)))
           (recur (rest s))))
       (.close sink))
     source))
