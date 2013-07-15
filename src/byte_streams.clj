@@ -371,17 +371,12 @@
 
 ;; byte-array => byte-buffer
 (def-conversion [byte-array ByteBuffer]
-  [ary]
-  (ByteBuffer/wrap ary))
-
-;; byte-array => direct-byte-buffer
-(def-conversion [byte-array DirectByteBuffer]
-  [ary]
-  (let [len (Array/getLength ary)
-        ^ByteBuffer buf (ByteBuffer/allocateDirect len)]
-    (.put buf ary 0 len)
-    (.position buf 0)
-    buf))
+  [ary {:keys [direct?] :or {direct? false}}]
+  (if direct?
+    (doto (ByteBuffer/allocateDirect (alength ary))
+      (.put ary)
+      .flip)
+    (ByteBuffer/wrap ary)))
 
 ;; byte-array => input-stream
 (def-conversion [byte-array InputStream]

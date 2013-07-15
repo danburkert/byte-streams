@@ -47,7 +47,7 @@
     (to-byte-array (repeat 2 buf))
     (is (= pos (.position buf)))))
 
-(deftest test-seq-of-byte-buffer
+(deftest test-seq-of-byte-buffer-position
   (let [buf (doto ^ByteBuffer (to-byte-buffer "quick brown fox")
               (.position 3)
               (.limit 6))
@@ -57,3 +57,19 @@
             (to-byte-array (convert buf (seq-of ByteBuffer) {:chunk-size chunk-size}))
             arr)))
     (is (empty? (convert buf (seq-of ByteBuffer) {:chunk-size 0})))))
+
+(deftest test-byte-buffer-conversion-options
+  (let [cnt (count text)]
+    (doseq [chunk-size [1 2 (/ cnt 3) (/ cnt 2) (- cnt 1) cnt (+ 1 cnt) (* 2 cnt)]
+            direct? [true false]]
+      (let [opts {:chunk-size chunk-size
+                  :direct? direct?}
+            ^ByteBuffer buf (to-byte-buffer text opts)
+            bufs (to-byte-buffers text  opts)
+            ^ByteBuffer buf' (to-byte-buffer bufs opts)]
+        (is (= (to-string buf) text))
+        (is (= (to-string bufs) text))
+        (is (= (to-string buf') text))
+        (is (= direct? (.isDirect buf)))
+        (is (every? #(= direct? (.isDirect ^ByteBuffer %)) bufs))
+        (is (= direct? (.isDirect buf')))))))
