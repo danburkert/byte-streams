@@ -103,7 +103,7 @@
     (let [m @src->dst->conversion
           next (concat
                  ;; normal a -> b
-                 (->> (m curr) keys)
+                 (keys (m curr))
 
                  ;; when there exists (a -> b), that implies (seq-of a) -> (seq-of b)
                  (when (seq-of? curr)
@@ -474,7 +474,7 @@
                  (.configureBlocking true))]
     (future
       (loop [s bufs]
-        (when (and (not (empty? s)) (.isOpen sink))
+        (when (and (seq s) (.isOpen sink))
           (.write sink (first s))
           (recur (rest s))))
       (.close sink))
@@ -501,7 +501,7 @@
 ;; char-sequence => string
 (def-conversion [CharSequence String]
   [char-sequence]
-  (.toString char-sequence))
+  (str char-sequence))
 
 ;; file => readable-channel
 (def-conversion [File ReadableByteChannel]
