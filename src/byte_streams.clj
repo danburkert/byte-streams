@@ -533,6 +533,52 @@
   [channel]
   (Channels/newOutputStream channel))
 
+(defmacro ^:private def-primitive-conversions [type put get]
+  (let [width (eval `(/ (. ~type SIZE) Byte/SIZE))]
+    `(do
+       (def-conversion [~type ByteBuffer]
+         [x# {:keys [~'direct?]}]
+         (doto (if ~'direct?
+                 (ByteBuffer/allocateDirect ~width)
+                 (ByteBuffer/allocate ~width))
+           (~put x#)
+           .flip))
+
+       (def-conversion [(seq-of ~type) ByteBuffer]
+         [xs# {:keys [~'direct?]}]
+         (let [len# (* (count xs#) ~width)
+               buf# (if ~'direct?
+                      (ByteBuffer/allocateDirect len#)
+                      (ByteBuffer/allocate len#))]
+           (doseq [^{:tag ~type} x# xs#]
+             (~put buf# x#))
+           (.flip buf#)))
+
+       (def-conversion [(seq-of ~type) (seq-of ByteBuffer)]
+         [xs# {:keys [~'chunk-size] :or {~'chunk-size 4096} :as opts#}]
+         (if (> ~'chunk-size ~width)
+           (map #(convert % ByteBuffer opts#)
+                (partition-all (quot ~'chunk-size ~width) xs#))
+           [(convert xs# ByteBuffer opts#)]))
+
+       ;; ByteBuffer => (seq-of primitive) is not homomorphic
+       #_(def-conversion [ByteBuffer (seq-of ~type)]
+           [b#]
+           (let [buf# (.duplicate b#)]
+             (repeatedly (quot (.remaining buf#) ~width) #(~get buf#)))))))
+
+(def-primitive-conversions Byte .put .get)
+(def-primitive-conversions Short .putShort .getShort)
+(def-primitive-conversions Integer .putInt .getInt)
+(def-primitive-conversions Long .putLong .getLong)
+(def-primitive-conversions Float .putFloat .getFloat)
+(def-primitive-conversions Double .putDouble .getDouble)
+(def-primitive-conversions Character .putChar .getChar)
+
+(def-conversion [ByteBuffer (seq-of byte)]
+  [buf]
+  (seq (convert buf byte-array)))
+
 ;;; def-transfers
 
 (def-transfer [ReadableByteChannel File]

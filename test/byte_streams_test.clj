@@ -73,3 +73,18 @@
         (is (= direct? (.isDirect buf)))
         (is (every? #(= direct? (.isDirect ^ByteBuffer %)) bufs))
         (is (= direct? (.isDirect buf')))))))
+
+(deftest test-byte-conversions
+  (let [cnt (count text)]
+    (doseq [chunk-size [1 2 (/ cnt 3) (/ cnt 2) (- cnt 1) cnt (+ 1 cnt) (* 2 cnt)]
+            direct? [true false]]
+      (let [opts {:chunk-size chunk-size
+                  :direct? direct?}
+            bytes (convert text (seq-of byte))
+            buf (to-byte-buffer bytes opts)
+            bufs (convert bytes (seq-of ByteBuffer) opts)]
+        (is (= (to-string bytes) text))
+        (is (= (to-string buf) text))
+        (is (= (to-string bufs) text))
+        (is (= direct? (.isDirect buf)))
+        (is (every? #(= direct? (.isDirect ^ByteBuffer %)) bufs))))))
